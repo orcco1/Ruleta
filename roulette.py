@@ -2,6 +2,7 @@ import random
 import os
 import re
 from collections import Counter
+from datetime import datetime
 
 # Roulette number colors
 greens = [0]
@@ -10,6 +11,11 @@ blacks = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35]
 
 # Create a single list of all roulette numbers
 roulette = greens + reds + blacks
+
+def ensure_directories():
+    """Ensure required directories exist"""
+    os.makedirs("Logs", exist_ok=True)
+    os.makedirs("analysis", exist_ok=True)
 
 def run_roulette():
     number = random.choice(roulette)
@@ -27,6 +33,7 @@ def run_roulette():
     return result
 
 def log_result():
+    ensure_directories()
     result = run_roulette()  # Call the function to get the result
     with open("Logs/log.txt", "a") as f:
         f.write(result + "\n")
@@ -36,6 +43,13 @@ def cleaner():
         os.remove("Logs/log.txt")
     else:
         print("No logs to clean")
+
+def save_analysis(filename, content):
+    ensure_directories()
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(f"analysis/{filename}", "a") as f:
+        f.write(f"\n=== Analysis at {timestamp} ===\n")
+        f.write(content + "\n")
 
 def analyzer():
     # Check if log file exists
@@ -76,22 +90,26 @@ def analyzer():
     most_common_num = Counter(numbers).most_common(1)[0]
     num_distribution = Counter(numbers)
 
-    print("\n=== Roulette Statistics ===")
-    print(f"Total spins: {total_spins}")
-    print(f"\nMost common number: {most_common_num[0]} (appeared {most_common_num[1]} times)")
+    # Prepare analysis content
+    analysis_content = f"Total spins: {total_spins}\n"
+    analysis_content += f"\nMost common number: {most_common_num[0]} (appeared {most_common_num[1]} times)\n"
 
-    print("\nColor distribution:")
+    analysis_content += "\nColor distribution:\n"
     for color, count in color_counts.items():
         percentage = (count / total_spins) * 100
-        print(f"{color.capitalize()}: {count} spins ({percentage:.2f}%)")
+        analysis_content += f"{color.capitalize()}: {count} spins ({percentage:.2f}%)\n"
 
-    print("\nNumber frequency (top 5):")
+    analysis_content += "\nNumber frequency (top 5):\n"
     for num, count in Counter(numbers).most_common(5):
-        print(f"Number {num}: {count} times ({(count/total_spins)*100:.2f}%)")
+        analysis_content += f"Number {num}: {count} times ({(count/total_spins)*100:.2f}%)\n"
+
+    # Save to file
+    save_analysis("general_analysis.txt", analysis_content)
+    print("General analysis saved to analysis/general_analysis.txt")
 
 def color_streak_analyzer():
     if not os.path.exists("Logs/log.txt"):
-        print("No logs.")
+        print("No logs found.")
         return
 
     with open("Logs/log.txt", "r") as f:
@@ -108,7 +126,6 @@ def color_streak_analyzer():
         match = re.search(pattern, entry.strip())
         if match:
             colors.append(match.group(1))
-
 
     # Analyze streaks
     current_streak = 1
@@ -142,38 +159,41 @@ def color_streak_analyzer():
             top_streaks[color].append(length)
             top_streaks[color].sort(reverse=True)
 
-    print("\n=== Streak color analysis ===")
-    print(f"Total of runs analyzed: {len(colors)}")
+    # Prepare analysis content
+    analysis_content = f"Total runs analyzed: {len(colors)}\n"
 
     for color in ["red", "black", "green"]:
-        print(f"\nColor {color.upper()}:")
-        print(f"Max streak: {max_streaks[color]} consecutive runs")
-        print(f"Top 3 streaks: {', '.join(map(str, top_streaks[color]))}")
+        analysis_content += f"\nColor {color.upper()}:\n"
+        analysis_content += f"Max streak: {max_streaks[color]} consecutive runs\n"
+        analysis_content += f"Top 3 streaks: {', '.join(map(str, top_streaks[color]))}\n"
 
         total_color = colors.count(color)
         streak_appearances = sum(1 for c, _ in streaks if c == color)
         if streak_appearances > 0:
             avg_streak = total_color / streak_appearances
-            print(f"Avg streak: {avg_streak:.1f} runs")
+            analysis_content += f"Avg streak: {avg_streak:.1f} runs\n"
 
-    # Show largest streaks of any color
+    # Top 5 longest streaks of any color
     all_streaks = sorted(streaks, key=lambda x: x[1], reverse=True)[:5]
-    print("\nTop 5 longest streaks:")
+    analysis_content += "\nTop 5 longest streaks:\n"
     for i, (color, length) in enumerate(all_streaks, 1):
-        print(f"{i}. {color.upper()}: {length} consecutive runs")
+        analysis_content += f"{i}. {color.upper()}: {length} consecutive runs\n"
 
+    # Save to file
+    save_analysis("streak_analysis.txt", analysis_content)
+    print("Streak analysis saved to analysis/streak_analysis.txt")
 
 if __name__ == "__main__":
+    ensure_directories()
     while True:
         print("\n1. Run roulette")
-        print("2. Analyze results")
-        print("3. Clean log")
-        print("4. Analyze color streaks")
+        print("2. Analyze results (general)")
+        print("3. Analyze color streaks")
+        print("4. Clean log")
         print("5. Exit")
         choice = input("Select an option: ")
 
         if choice == "1":
-            # Your existing run code
             while True:
                 try:
                     num_of_runs = int(input("Enter the number of runs (0 to cancel): "))
@@ -194,12 +214,11 @@ if __name__ == "__main__":
             analyzer()
 
         elif choice == "3":
-            print("Clean log...")
-            cleaner()
+            color_streak_analyzer()
 
         elif choice == "4":
-            print("Streak analyzer")
-            color_streak_analyzer()
+            print("Clean log...")
+            cleaner()
 
         elif choice == "5":
             print("Exiting program...")
