@@ -89,12 +89,87 @@ def analyzer():
     for num, count in Counter(numbers).most_common(5):
         print(f"Number {num}: {count} times ({(count/total_spins)*100:.2f}%)")
 
+def color_streak_analyzer():
+    if not os.path.exists("Logs/log.txt"):
+        print("No logs.")
+        return
+
+    with open("Logs/log.txt", "r") as f:
+        logs = f.readlines()
+
+    if not logs:
+        print("Empty log")
+        return
+
+    # Get colors
+    colors = []
+    pattern = r"Color: (\w+)"
+    for entry in logs:
+        match = re.search(pattern, entry.strip())
+        if match:
+            colors.append(match.group(1))
+
+
+    # Analyze streaks
+    current_streak = 1
+    max_streaks = {"red": 0, "black": 0, "green": 0}
+    current_color = colors[0]
+    streaks = []
+
+    for i in range(1, len(colors)):
+        if colors[i] == current_color:
+            current_streak += 1
+        else:
+            streaks.append((current_color, current_streak))
+            if current_streak > max_streaks[current_color]:
+                max_streaks[current_color] = current_streak
+            current_color = colors[i]
+            current_streak = 1
+
+    # Add
+    streaks.append((current_color, current_streak))
+    if current_streak > max_streaks[current_color]:
+        max_streaks[current_color] = current_streak
+
+    # Top 3 longest streaks by color
+    top_streaks = {"red": [], "black": [], "green": []}
+    for color, length in streaks:
+        if len(top_streaks[color]) < 3:
+            top_streaks[color].append(length)
+            top_streaks[color].sort(reverse=True)
+        elif length > top_streaks[color][-1]:
+            top_streaks[color].pop()
+            top_streaks[color].append(length)
+            top_streaks[color].sort(reverse=True)
+
+    print("\n=== Streak color analysis ===")
+    print(f"Total of runs analyzed: {len(colors)}")
+
+    for color in ["red", "black", "green"]:
+        print(f"\nColor {color.upper()}:")
+        print(f"Max streak: {max_streaks[color]} consecutive runs")
+        print(f"Top 3 streaks: {', '.join(map(str, top_streaks[color]))}")
+
+        total_color = colors.count(color)
+        streak_appearances = sum(1 for c, _ in streaks if c == color)
+        if streak_appearances > 0:
+            avg_streak = total_color / streak_appearances
+            print(f"Avg streak: {avg_streak:.1f} runs")
+
+    # Show largest streaks of any color
+    all_streaks = sorted(streaks, key=lambda x: x[1], reverse=True)[:5]
+    print("\nTop 5 longest streaks:")
+    for i, (color, length) in enumerate(all_streaks, 1):
+        print(f"{i}. {color.upper()}: {length} consecutive runs")
+
+
 if __name__ == "__main__":
     while True:
         print("\n1. Run roulette")
         print("2. Analyze results")
         print("3. Clean log")
-        print("4. Exit")
+        print("4. Analyze color streaks")
+        print("5. Exit")
         choice = input("Select an option: ")
 
         if choice == "1":
@@ -123,6 +198,10 @@ if __name__ == "__main__":
             cleaner()
 
         elif choice == "4":
+            print("Streak analyzer")
+            color_streak_analyzer()
+
+        elif choice == "5":
             print("Exiting program...")
             break
 
