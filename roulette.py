@@ -30,5 +30,19 @@ def log_result():
 
 
 if __name__ == "__main__":
-    log_result()
+    while True:
+        try:
+            num_of_runs = int(input("Enter the number of runs (0 to exit): "))
+            if num_of_runs == 0:
+                print("Exiting program...")
+                break
+            if num_of_runs < 0:
+                print("Please enter a positive number")
+                continue
 
+            for x in range(num_of_runs):
+                log_result()
+            print(f"Completed {num_of_runs} runs. Results logged to Logs/log.txt")
+            break
+        except ValueError:
+            print("Please enter a valid number")
