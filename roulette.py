@@ -31,6 +31,12 @@ def log_result():
     with open("Logs/log.txt", "a") as f:
         f.write(result + "\n")
 
+def cleaner():
+    if (os.path.exists("Logs/log.txt")):
+        os.remove("Logs/log.txt")
+    else:
+        print("No logs to clean")
+
 def analyzer():
     # Check if log file exists
     if not os.path.exists("Logs/log.txt"):
@@ -87,7 +93,8 @@ if __name__ == "__main__":
     while True:
         print("\n1. Run roulette")
         print("2. Analyze results")
-        print("3. Exit")
+        print("3. Clean log")
+        print("4. Exit")
         choice = input("Select an option: ")
 
         if choice == "1":
@@ -112,6 +119,10 @@ if __name__ == "__main__":
             analyzer()
 
         elif choice == "3":
+            print("Clean log...")
+            cleaner()
+
+        elif choice == "4":
             print("Exiting program...")
             break
 
